@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:text_editor/text_editor.dart';
 
@@ -22,15 +23,99 @@ class TextOverImage extends StatefulWidget {
 }
 
 class _TextOverImageState extends State<TextOverImage> {
+  void _tapHandler(text, textStyle, textAlign) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      transitionDuration: Duration(
+        milliseconds: 400,
+      ), // how long it takes to popup dialog after button click
+      pageBuilder: (_, __, ___) {
+        // your widget implementation
+        return Container(
+          color: Colors.black.withOpacity(0.6),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              // top: false,
+              child: Container(
+                child: TextEditor(
+                  fonts: fonts,
+                  text: text,
+                  textStyle: textStyle,
+                  textAlingment: textAlign,
+                  onEditCompleted: (style, align, text) {
+                    setState(() {
+                      _text = text;
+                      _textStyle = style;
+                      _textAlign = align;
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   File _imageFile;
 
   ScreenshotController screenshotController = ScreenshotController();
 
+  Offset offset = Offset.zero;
+
+  Offset offset2 = Offset.zero;
+
+  final fonts = [
+    'SFProDisplayBold',
+    'QuickSand',
+  ];
+
+  TextStyle _textStyle = TextStyle(
+    fontSize: 50,
+    color: Colors.white,
+    fontFamily: '',
+  );
+
+  void changeFontFamilyHandler(fontFamily) {
+    setState(() {
+      _textStyle = TextStyle(
+        color: _textStyle.color,
+        fontFamily: fontFamily,
+        fontSize: _textStyle.fontSize,
+      );
+    });
+  }
+
+  String _text = 'Texto Editavel';
+
+  TextAlign _textAlign = TextAlign.center;
+
+  bool hasBorder = true;
+
   @override
   Widget build(BuildContext context) {
+    final fonts = [
+      'SFProDisplayBold',
+      'QuickSand',
+    ];
+
+    String _image =
+        "https://i1.wp.com/multarte.com.br/wp-content/uploads/2019/03/facebook-logo-png2.png?resize=696%2C696&ssl=1";
+
     return Scaffold(
       appBar: AppBar(
         actions: [
+          IconButton(
+              icon: Icon(Icons.refresh),
+              onPressed: () {
+                setState(() {
+                  offset = Offset.zero;
+                });
+              }),
           RaisedButton(
             child: Text('Salvar'),
             onPressed: () {
@@ -41,65 +126,154 @@ class _TextOverImageState extends State<TextOverImage> {
                 setState(() {
                   _imageFile = image;
                 });
-                final result = await ImageGallerySaver.saveImage(image
-                    .readAsBytesSync()); // Save image to gallery,  Needs plugin  https://pub.dev/packages/image_gallery_saver
-                print("File Saved to Gallery");
               }).catchError((onError) {
                 print(onError);
               });
-              // screenshotController.capture().then((File image) {
-              //   //Capture Done
-              //   setState(() {
-              //     _imageFile = image;
-              //   });
-              // }).catchError((onError) {
-              //   print(onError);
-              // });
             },
           )
         ],
         title: Text('Text Over Image Image Example'),
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Column(
-            children: [
-              Screenshot(
-                controller: screenshotController,
-                child: Container(
-                  padding: EdgeInsets.only(top: 20, bottom: 20),
-                  height: 500,
-                  width: 500,
-                  child: Stack(
-                    children: <Widget>[
-                      GestureDetector(
-                        onTap: () {},
-                        child: Container(
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(5),
-                              color: Colors.blue,
-                              image: DecorationImage(
-                                  image: new NetworkImage(
-                                      "https://image.freepik.com/free-photo/3d-grunge-room-interior-with-spotlight-smoky-atmosphere-background_1048-11333.jpg"),
-                                  fit: BoxFit.fill)),
+      body: Center(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: fonts.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                          border: Border.all(), shape: BoxShape.circle),
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () => changeFontFamilyHandler(fonts[index]),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Tt',
+                              style: TextStyle(
+                                  fontFamily: fonts[index], fontSize: 20),
+                            ),
+                          ),
                         ),
                       ),
-                      HomePage(),
-                      SocialMediaName()
-                    ],
-                  ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Screenshot(
+              controller: screenshotController,
+              child: Container(
+                padding: EdgeInsets.only(top: 20, bottom: 20),
+                height: 500,
+                width: 500,
+                child: Stack(
+                  children: <Widget>[
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          hasBorder = false;
+                        });
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                            color: Colors.blue,
+                            image: DecorationImage(
+                                image: new NetworkImage(
+                                    "https://image.freepik.com/free-photo/3d-grunge-room-interior-with-spotlight-smoky-atmosphere-background_1048-11333.jpg"),
+                                fit: BoxFit.fill)),
+                      ),
+                    ),
+                    Container(
+                      child: Positioned(
+                        left: offset.dx,
+                        top: offset.dy,
+                        child: GestureDetector(
+                            onPanUpdate: (details) {
+                              setState(() {
+                                offset = Offset(offset.dx + details.delta.dx,
+                                    offset.dy + details.delta.dy);
+                              });
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  border: Border.all(
+                                      color: hasBorder
+                                          ? Colors.white
+                                          : Colors.transparent)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Center(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        hasBorder = true;
+                                      });
+                                      _tapHandler(
+                                        _text,
+                                        _textStyle,
+                                        _textAlign,
+                                      );
+                                    },
+                                    child: Text(
+                                      _text,
+                                      style: _textStyle,
+                                      textAlign: _textAlign,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )),
+                      ),
+                    ),
+                    Container(
+                      child: Positioned(
+                        left: offset2.dx,
+                        top: offset2.dy,
+                        child: GestureDetector(
+                            onPanUpdate: (details) {
+                              setState(() {
+                                offset2 = Offset(offset2.dx + details.delta.dx,
+                                    offset2.dy + details.delta.dy);
+                              });
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  border:
+                                      Border.all(color: Colors.transparent)),
+                              width: MediaQuery.of(context).size.width * 0.9,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Center(
+                                  child: Image.network(
+                                    _image,
+                                    width: 60,
+                                    height: 60,
+                                  ),
+                                ),
+                              ),
+                            )),
+                      ),
+                    ),
+                    SocialMediaName()
+                  ],
                 ),
               ),
-              _imageFile != null
-                  ? Container(
-                      child: Image.file(_imageFile),
-                      padding: EdgeInsets.only(top: 20, bottom: 20),
-                    )
-                  : Container(
-                      child: Text('oi'),
-                    ),
-            ],
-          ),
+            ),
+            _imageFile != null
+                ? Container(
+                    child: Image.file(_imageFile),
+                    padding: EdgeInsets.only(top: 20, bottom: 20),
+                  )
+                : Container(
+                    child: Text('oi'),
+                  ),
+          ],
         ),
       ),
     );
@@ -143,66 +317,13 @@ class _SocialMediaNameState extends State<SocialMediaName> {
   }
 }
 
-class HomePage extends StatefulWidget {
+class LogoOverImage extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  _LogoOverImageState createState() => _LogoOverImageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _LogoOverImageState extends State<LogoOverImage> {
   Offset offset = Offset.zero;
-
-  final fonts = [
-    'SFProDisplayBold',
-    'QuickSand',
-  ];
-
-  TextStyle _textStyle = TextStyle(
-    fontSize: 50,
-    color: Colors.white,
-    fontFamily: 'Oswald',
-  );
-
-  String _text = 'Sample Text';
-
-  TextAlign _textAlign = TextAlign.center;
-
-  void _tapHandler(text, textStyle, textAlign) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      transitionDuration: Duration(
-        milliseconds: 400,
-      ), // how long it takes to popup dialog after button click
-      pageBuilder: (_, __, ___) {
-        // your widget implementation
-        return Container(
-          color: Colors.black.withOpacity(0.6),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            body: SafeArea(
-              // top: false,
-              child: Container(
-                child: TextEditor(
-                  fonts: fonts,
-                  text: text,
-                  textStyle: textStyle,
-                  textAlingment: textAlign,
-                  onEditCompleted: (style, align, text) {
-                    setState(() {
-                      _text = text;
-                      _textStyle = style;
-                      _textAlign = align;
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +336,6 @@ class _HomePageState extends State<HomePage> {
               setState(() {
                 offset = Offset(
                     offset.dx + details.delta.dx, offset.dy + details.delta.dy);
-                print(offset.dx);
               });
             },
             child: Container(
@@ -225,103 +345,15 @@ class _HomePageState extends State<HomePage> {
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Center(
-                  child: GestureDetector(
-                    onTap: () => _tapHandler(_text, _textStyle, _textAlign),
-                    child: Text(
-                      _text,
-                      style: _textStyle,
-                      textAlign: _textAlign,
-                    ),
+                  child: Image.network(
+                    'https://imagepng.org/wp-content/uploads/2017/08/instagram-icone-icon.png',
+                    width: 60,
+                    height: 60,
                   ),
                 ),
               ),
             )),
       ),
     );
-  }
-}
-
-class Timestamp extends StatelessWidget {
-  Timestamp(this.timestamp);
-
-  final DateTime timestamp;
-
-  /// This size could be calculated similarly to the way the text size in
-  /// [Bubble] is calculated instead of using magic values.
-  static final Size size = Size(60.0, 25.0);
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: EdgeInsets.all(3.0),
-        decoration: BoxDecoration(
-          color: Colors.greenAccent,
-          border: Border.all(color: Colors.yellow),
-        ),
-        child:
-            Text('${timestamp.hour}:${timestamp.minute}:${timestamp.second}'),
-      );
-}
-
-class Bubble extends StatefulWidget {
-  Bubble({@required this.text});
-
-  final TextSpan text;
-
-  @override
-  _BubbleState createState() => new _BubbleState();
-}
-
-class _BubbleState extends State<Bubble> {
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      // The text to render
-      final textWidget = Text.rich(widget.text);
-
-      // Calculate the left, top, bottom position of the end of the last text
-      // line.
-      final lastBox = _calcLastLineEnd(context, constraints);
-
-      // Calculate whether the timestamp fits into the last line or if it has
-      // to be positioned after the last line.
-      final fitsLastLine =
-          constraints.maxWidth - lastBox.right > Timestamp.size.width + 10.0;
-
-      return Stack(
-        children: [
-          // Ensure the stack is big enough to render the text and the
-          // timestamp.
-          SizedBox.fromSize(
-              size: Size(
-                constraints.maxWidth,
-                (fitsLastLine ? lastBox.top : lastBox.bottom) +
-                    10.0 +
-                    Timestamp.size.height,
-              ),
-              child: Container()),
-          // Render the text.
-          textWidget,
-          // Render the timestamp.
-          Positioned(
-            left: constraints.maxWidth - (Timestamp.size.width + 10.0),
-            top: (fitsLastLine ? lastBox.top : lastBox.bottom) + 5.0,
-            child: Timestamp(DateTime.now()),
-          ),
-        ],
-      );
-    });
-  }
-
-  // Calculate the left, top, bottom position of the end of the last text
-  // line.
-  TextBox _calcLastLineEnd(BuildContext context, BoxConstraints constraints) {
-    final richTextWidget = Text.rich(widget.text).build(context) as RichText;
-    final renderObject = richTextWidget.createRenderObject(context);
-    renderObject.layout(constraints);
-    final lastBox = renderObject
-        .getBoxesForSelection(TextSelection(
-            baseOffset: 0, extentOffset: widget.text.toPlainText().length))
-        .last;
-    return lastBox;
   }
 }
